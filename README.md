@@ -1,2 +1,1 @@
-# PracticalMachineLearningProject
-Project for coursera course practical machine learning
+Please see index.rmd for the R markdown and analysis.
