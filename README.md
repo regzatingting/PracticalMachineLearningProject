@@ -1,1 +1,1 @@
-Please see index.rmd for the R markdown and analysis.
+Please see index.pdf for the final R markdown and analysis.
