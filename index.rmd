@@ -1,0 +1,89 @@
+# Practical Machine Learning
+## Project Wrapup by Rebecca Lu
+
+#### How I built the model
+The goal is to predict the manner in which users of FuelBand and Fitbit and etc did the exercise. Based on their behaviors, we are going to group them into 5 categories, A, B, C, D, and E. I want to build a prediction model that could maximize the accuracy and minimize the out-of-sample error. And I am going to preprocess the data, eliminating the attributes which have NA values and missing data. After preprocessing, I will divide the data set into 2 subsets: a training set and a testing set. Then I will use the Random Forest algorithm to perform the pattern classification. After that, accuracy of the model and the expected out-of-sample error will be calculated.   
+  
+Seed is set to be 7, so that the result could be reproduced. 
+   
+#### Corss Validation
+I will subsampling the training data into a subtraining data (75% of the training data set) and a subtesting data. I will build the model based on the subtraining data set and see how it works on the subtesting data set. This way we can avoid the problem of model overfitting.
+    
+#### Expected out-of-sample error
+A prediction model which is not over-fitted is always expected to have some out-of-sample error.  
+The expected out-of-sample error corresponds to the misclassified observations/ total number of observations. Therefore it is related to the quality of my model and the total numbers of observations.	
+    
+#### Why I made the choices I did
+Random forest are an ensemble learning method broadly used for classification and regression. It is operated by constructing a multitude of decision trees and then make predictions based on the mode of the trees. Tree emsembles, in particular Random Forests, are easy to tune. It is fast and scalable. Therefore building a Random Forest model will be a good choice for this pattern classification case.
+
+###R Codes and Analysis
+   
+####Loading Libraries and Reading Data:
+```{r message=FALSE, warning=FALSE}
+library(caret)
+library(ggplot2)
+library(randomForest)
+getwd()
+setwd("C:/Users/Rebecca/Dropbox/Personal + ebook/Practical Machine Learning Coursera/Project")
+set.seed(7)
+```
+Then read the data from the local file. We're gonna mark empty string, NA, and Null as NA to make sure the training data set and testing data set have the same levels.
+```{r message=FALSE, warning=FALSE}
+testing <- read.csv('pml-testing.csv', na.strings=c("", "NA", "NULL"))
+training <- read.csv('pml-training.csv', na.strings=c("","NA","NULL"))
+dim(testing)
+dim(training)
+```
+####Preprocessing:
+Discard attributes which are all NAs and eliminating the unrelated attributes such as 'user_name', 'raw_timestamp_part_1' and etc.
+```{r message=FALSE, warning=FALSE}
+testing1 = testing[, colSums(is.na(testing)) == 0] 
+training1 = training[, colSums(is.na(training)) == 0]
+testing2 = testing1[, -c(1:8)]
+training2 = training1[, -c(1:8)]
+ncol(testing2)
+ncol(training2)
+
+# to get a general idea of what the distribution of training classe looks like, I am going to use ggplot2 package to draw the histogram:
+ggplot(training2, aes(classe)) + geom_histogram(fill='blue')
+```
+   
+####SubSampling:
+Divide the training data into two parts: a subTraining data set and a subTest data set.
+```{r message=FALSE, warning=FALSE}
+partition <- createDataPartition(training2$classe, p = 0.75, list=FALSE)
+subTraining <- training2[partition ,]
+subTest <- training2[-partition ,]
+```
+####Build Random Forest Model and Evaluate Out-of-Sample Accuracy:
+Build the Random Forest Model using the subTraining data.
+```{r message=FALSE, warning=FALSE}
+rfModel <- randomForest(classe ~ ., data=subTraining, ntree=10)
+```
+Predict the subTesting data and see how it works.
+```{r message=FALSE, warning=FALSE}
+predictSubTest <- predict(rfModel, subTest)
+confusionMatrix(predictSubTest, subTest$classe)
+```
+We can see from the above result that we got an Accuracy of 0.99 and the 95% CI is (0.9868, 0.9926). Therefore our model is pretty good in terms of predicting the patterns.
+
+####Predict on Testing Data:
+```{r message=FALSE, warning=FALSE}
+predictTesting <- predict(rfModel, testing2)
+predictTesting
+```
+Save the prediction to files for submission:
+```{r message=FALSE, warning=FALSE}
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+pml_write_files(predictTesting)
+```
+
+###Reference
+https://en.wikipedia.org/wiki/Random_forest
+
